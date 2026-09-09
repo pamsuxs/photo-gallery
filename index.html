@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#eee8f8" />
+  <title>Moments · Photo Gallery</title>
+  <style>
+    :root{
+      --bg:#eee8f8;
+      --ink:#332d3d;
+      --muted:#847a91;
+      --accent:#8f79ad;
+      --glass:rgba(251,249,255,.76);
+      --line:rgba(82,65,103,.11);
+      --shadow:0 30px 85px rgba(77,58,101,.16),0 5px 20px rgba(77,58,101,.08);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      background:
+        radial-gradient(circle at 16% 12%, rgba(255,255,255,.78) 0 7%, transparent 30%),
+        radial-gradient(circle at 84% 88%, rgba(218,205,239,.54) 0 9%, transparent 32%),
+        linear-gradient(145deg,#f4f0fb 0%,var(--bg) 48%,#e9e1f4 100%);
+      color:var(--ink);
+      font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+      -webkit-font-smoothing:antialiased;
+      overflow:hidden;
+      position:relative;
+    }
+    body::before,body::after{
+      content:"";position:fixed;pointer-events:none;z-index:0;border-radius:50%;filter:blur(2px);
+    }
+    body::before{width:260px;height:260px;left:-90px;top:-100px;background:rgba(255,255,255,.34)}
+    body::after{width:320px;height:320px;right:-120px;bottom:-145px;background:rgba(196,177,222,.18)}
+    .page{
+      min-height:100%;
+      display:grid;
+      grid-template-rows:auto 1fr auto;
+      padding:max(24px,env(safe-area-inset-top)) max(20px,env(safe-area-inset-right)) max(20px,env(safe-area-inset-bottom)) max(20px,env(safe-area-inset-left));
+      position:relative;z-index:1;
+    }
+    header{
+      width:min(980px,100%);
+      margin:0 auto;
+      display:flex;
+      align-items:end;
+      justify-content:space-between;
+      padding:2px 2px 18px;
+    }
+    .brand{font-family:Georgia,"Times New Roman",serif;font-size:clamp(25px,2.5vw,34px);letter-spacing:.025em;font-weight:500;color:#463a55;text-shadow:0 1px 0 rgba(255,255,255,.48)}
+    .hint{font-size:12px;letter-spacing:.10em;text-transform:uppercase;color:var(--muted)}
+    main{display:grid;place-items:center;min-height:0}
+    .gallery{
+      position:relative;
+      width:min(460px,82vw,54vh);
+      aspect-ratio:3 / 4;
+      height:auto;
+      border-radius:28px;
+      overflow:hidden;
+      background:#ddd4e9;
+      box-shadow:var(--shadow);
+      border:1px solid rgba(255,255,255,.76);
+      user-select:none;
+      touch-action:pan-y;
+    }
+    .stage{position:absolute;inset:0;display:grid;place-items:center;background:linear-gradient(145deg,#e8e1f0,#d9cee7)}
+    .stage img{
+      width:100%;height:100%;object-fit:contain;display:block;
+      transition:opacity .32s ease, transform .55s cubic-bezier(.2,.7,.2,1);
+      cursor:zoom-in;
+    }
+    .stage img.changing{opacity:.15;transform:scale(1.012)}
+    .shade{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(0,0,0,.04),transparent 25%,transparent 70%,rgba(0,0,0,.12))}
+    .nav{
+      position:absolute;top:50%;transform:translateY(-50%);
+      width:46px;height:46px;border-radius:999px;border:1px solid rgba(255,255,255,.7);
+      background:var(--glass);backdrop-filter:blur(15px);-webkit-backdrop-filter:blur(15px);
+      display:grid;place-items:center;color:#625172;cursor:pointer;
+      opacity:0;transition:opacity .22s ease,transform .22s ease,background .2s ease;
+      box-shadow:0 7px 24px rgba(74,55,98,.13);z-index:4;
+    }
+    .gallery:hover .nav,.nav:focus-visible{opacity:1}
+    .nav:hover{background:rgba(255,255,255,.94);color:#493957}
+    .nav:active{transform:translateY(-50%) scale(.95)}
+    .nav.prev{left:18px}.nav.next{right:18px}
+    .nav svg{width:19px;height:19px;stroke-width:1.8}
+    .counter{
+      position:absolute;right:18px;bottom:17px;z-index:4;
+      padding:8px 11px;border-radius:999px;background:rgba(63,49,80,.48);color:white;
+      backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+      font-size:11px;letter-spacing:.16em;font-variant-numeric:tabular-nums;
+    }
+    .dots{position:absolute;left:50%;bottom:20px;transform:translateX(-50%);display:flex;gap:7px;z-index:4}
+    .dot{width:5px;height:5px;border-radius:50%;border:0;padding:0;background:rgba(255,255,255,.58);cursor:pointer;transition:width .25s,background .25s,border-radius .25s,transform .25s}
+    .dot.active{width:20px;border-radius:999px;background:rgba(255,255,255,.96);box-shadow:0 1px 8px rgba(73,56,94,.18)}
+    footer{width:min(980px,100%);margin:0 auto;padding-top:17px;display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:11px;letter-spacing:.05em}
+    .kbd{display:inline-flex;gap:5px}.key{border:1px solid var(--line);border-bottom-color:rgba(82,65,103,.18);border-radius:7px;padding:3px 6px;background:rgba(255,255,255,.42);box-shadow:inset 0 1px 0 rgba(255,255,255,.5)}
+    .lightbox{position:fixed;inset:0;background:rgba(27,22,34,.93);display:none;place-items:center;z-index:20;padding:28px;cursor:zoom-out}
+    .lightbox.open{display:grid;animation:fade .2s ease}
+    .lightbox img{max-width:96vw;max-height:92vh;object-fit:contain;border-radius:10px;box-shadow:0 30px 100px rgba(0,0,0,.35)}
+    .close{position:fixed;right:24px;top:24px;width:42px;height:42px;border-radius:999px;border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.11);color:white;font-size:22px;cursor:pointer}
+    @keyframes fade{from{opacity:0}to{opacity:1}}
+    @media (max-width:700px){
+      .page{padding:18px 14px 16px}.hint,.kbd{display:none}header{padding-bottom:12px}.brand{font-size:25px}
+      .gallery{width:min(88vw,54vh);height:auto;aspect-ratio:3 / 4;border-radius:24px}.nav{opacity:1;width:42px;height:42px}.nav.prev{left:12px}.nav.next{right:12px}
+      footer{justify-content:center}.counter{right:13px;bottom:13px}.dots{bottom:17px}
+    }
+    @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <div class="brand">Moments</div>
+      <div class="hint">Swipe · Click · Remember</div>
+    </header>
+
+    <main>
+      <section class="gallery" id="gallery" aria-label="照片画廊">
+        <div class="stage"><img id="photo" alt="" draggable="false" /><div class="shade"></div></div>
+        <button class="nav prev" id="prev" aria-label="上一张">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <button class="nav next" id="next" aria-label="下一张">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
+        <div class="dots" id="dots" aria-label="照片选择"></div>
+        <div class="counter" id="counter">01 / 01</div>
+      </section>
+    </main>
+
+    <footer>
+      <span>A small collection of moments.</span>
+      <span class="kbd"><span class="key">←</span><span class="key">→</span> to browse</span>
+    </footer>
+  </div>
+
+  <div class="lightbox" id="lightbox" aria-hidden="true">
+    <button class="close" id="close" aria-label="关闭">×</button>
+    <img id="lightboxImg" alt="" />
+  </div>
+
+<script>
+(() => {
+  const photo = document.getElementById('photo');
+  const counter = document.getElementById('counter');
+  const dotsEl = document.getElementById('dots');
+  const gallery = document.getElementById('gallery');
+  const lightbox = document.getElementById('lightbox');
+  const lightboxImg = document.getElementById('lightboxImg');
+  let items = [];
+  let index = 0;
+  let touchStartX = null;
+
+  const pad = n => String(n).padStart(2,'0');
+
+  function renderDots(){
+    dotsEl.innerHTML='';
+    items.forEach((_,i)=>{
+      const b=document.createElement('button');
+      b.className='dot'+(i===index?' active':'');
+      b.setAttribute('aria-label',`第 ${i+1} 张`);
+      b.addEventListener('click',()=>show(i));
+      dotsEl.appendChild(b);
+    });
+  }
+
+  function preload(i){
+    if(!items.length) return;
+    [i-1,i+1].forEach(n=>{
+      const j=(n+items.length)%items.length;
+      const im=new Image(); im.src=items[j].src;
+    });
+  }
+
+  function show(i, animate=true){
+    if(!items.length) return;
+    index=(i+items.length)%items.length;
+    const apply=()=>{
+      photo.src=items[index].src;
+      photo.alt=items[index].alt || `Photo ${index+1}`;
+      counter.textContent=`${pad(index+1)} / ${pad(items.length)}`;
+      renderDots(); preload(index);
+    };
+    if(!animate){ apply(); return; }
+    photo.classList.add('changing');
+    setTimeout(()=>{ apply(); requestAnimationFrame(()=>photo.classList.remove('changing')); },140);
+  }
+
+  function next(){ show(index+1); }
+  function prev(){ show(index-1); }
+  document.getElementById('next').addEventListener('click', next);
+  document.getElementById('prev').addEventListener('click', prev);
+
+  document.addEventListener('keydown',e=>{
+    if(lightbox.classList.contains('open')){
+      if(e.key==='Escape') closeLightbox();
+      return;
+    }
+    if(e.key==='ArrowRight') next();
+    if(e.key==='ArrowLeft') prev();
+  });
+
+  gallery.addEventListener('touchstart',e=>{touchStartX=e.changedTouches[0].clientX;},{passive:true});
+  gallery.addEventListener('touchend',e=>{
+    if(touchStartX===null) return;
+    const dx=e.changedTouches[0].clientX-touchStartX;
+    if(Math.abs(dx)>45) dx<0?next():prev();
+    touchStartX=null;
+  },{passive:true});
+
+  photo.addEventListener('click',()=>{
+    lightboxImg.src=photo.src; lightboxImg.alt=photo.alt;
+    lightbox.classList.add('open'); lightbox.setAttribute('aria-hidden','false');
+  });
+  function closeLightbox(){lightbox.classList.remove('open');lightbox.setAttribute('aria-hidden','true');}
+  lightbox.addEventListener('click',closeLightbox);
+  document.getElementById('close').addEventListener('click',e=>{e.stopPropagation();closeLightbox();});
+  lightboxImg.addEventListener('click',e=>e.stopPropagation());
+
+  fetch('gallery.json',{cache:'no-store'})
+    .then(r=>r.json())
+    .then(data=>{items=data;show(0,false);})
+    .catch(()=>{
+      items=[1,2,3,4,5].map(n=>({src:`photos/${String(n).padStart(2,'0')}.jpg`,alt:`Photo ${n}`}));
+      show(0,false);
+    });
+})();
+</script>
+</body>
+</html>
